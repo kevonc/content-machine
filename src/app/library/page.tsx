@@ -1,157 +1,162 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { usePhrases } from "@/lib/hooks";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
 import { supabase } from "@/lib/supabase";
-import { formatDate } from "@/lib/utils";
+import type { Database } from "@/lib/supabase";
+
+type Phrase = Database["public"]["Tables"]["phrases"]["Row"];
 
 export default function LibraryPage() {
-  const { phrases, loading, error } = usePhrases();
+  const { phrases: initialPhrases, loading, error } = usePhrases();
+  const [phrases, setPhrases] = useState<Phrase[]>([]);
   const [newPhrase, setNewPhrase] = useState("");
-  const [editingId, setEditingId] = useState<string | null>(null);
-  const [editingText, setEditingText] = useState("");
+  const [isAdding, setIsAdding] = useState(false);
+  const [hoveredPhraseId, setHoveredPhraseId] = useState<string | null>(null);
+  const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
-  const handleAdd = async () => {
-    if (!newPhrase.trim()) return;
+  // Update local state when initial phrases load
+  useEffect(() => {
+    if (initialPhrases) {
+      setPhrases(initialPhrases);
+    }
+  }, [initialPhrases]);
 
-    const { error } = await supabase
-      .from("phrases")
-      .insert({ phrase: newPhrase.trim() });
+  // Clear error message after 5 seconds
+  useEffect(() => {
+    if (errorMessage) {
+      const timer = setTimeout(() => {
+        setErrorMessage(null);
+      }, 5000);
+      
+      return () => clearTimeout(timer);
+    }
+  }, [errorMessage]);
 
-    if (error) {
-      console.error("Error adding phrase:", error);
+  const handleAddPhrase = async (e: React.FormEvent) => {
+    e.preventDefault();
+    const trimmedPhrase = newPhrase.trim();
+    if (!trimmedPhrase) return;
+    
+    // Check for duplicates
+    const isDuplicate = phrases.some(
+      p => (p.phrase || p.text || "").toLowerCase() === trimmedPhrase.toLowerCase()
+    );
+    
+    if (isDuplicate) {
+      setErrorMessage("This phrase already exists in your library.");
       return;
     }
+    
+    setIsAdding(true);
+    setErrorMessage(null);
+    
+    try {
+      const { data, error } = await supabase
+        .from("phrases")
+        .insert({ phrase: trimmedPhrase })
+        .select()
+        .single();
 
-    setNewPhrase("");
-  };
-
-  const handleEdit = async (id: string) => {
-    if (!editingText.trim()) return;
-
-    const { error } = await supabase
-      .from("phrases")
-      .update({ phrase: editingText.trim() })
-      .eq("id", id);
-
-    if (error) {
-      console.error("Error updating phrase:", error);
-      return;
+      if (error) throw error;
+      
+      // Update local state instead of reloading
+      if (data) {
+        setPhrases(prevPhrases => [data, ...prevPhrases]);
+        setNewPhrase("");
+      }
+    } catch (e) {
+      console.error("Error adding phrase:", e);
+      setErrorMessage("Failed to add phrase. Please try again.");
+    } finally {
+      setIsAdding(false);
     }
-
-    setEditingId(null);
-    setEditingText("");
   };
 
-  const handleDelete = async (id: string) => {
+  const handleDeletePhrase = async (id: string) => {
     if (!confirm("Are you sure you want to delete this phrase?")) return;
+    
+    try {
+      const { error } = await supabase
+        .from("phrases")
+        .delete()
+        .eq("id", id);
 
-    const { error } = await supabase
-      .from("phrases")
-      .delete()
-      .eq("id", id);
-
-    if (error) {
-      console.error("Error deleting phrase:", error);
+      if (error) throw error;
+      
+      // Update local state instead of reloading
+      setPhrases(prevPhrases => prevPhrases.filter(phrase => phrase.id !== id));
+    } catch (e) {
+      console.error("Error deleting phrase:", e);
+      setErrorMessage("Failed to delete phrase. Please try again.");
     }
-  };
-
-  const startEditing = (id: string, currentPhrase: string) => {
-    setEditingId(id);
-    setEditingText(currentPhrase);
   };
 
   return (
     <div className="max-w-4xl mx-auto p-6 space-y-6">
-      <h1 className="text-3xl font-semibold">Phrase Library</h1>
-
-      <div className="bg-card rounded-lg shadow-card p-6 space-y-6">
+      <h1 className="text-3xl font-semibold">
+        {loading 
+          ? "Phrase Library" 
+          : `Phrase Library (${phrases.length})`
+        }
+      </h1>
+      
+      <form onSubmit={handleAddPhrase} className="flex flex-col space-y-2">
         <div className="flex space-x-3">
-          <Input
-            placeholder="Add a new phrase..."
+          <input
+            type="text"
             value={newPhrase}
             onChange={(e) => setNewPhrase(e.target.value)}
-            onKeyPress={(e) => e.key === "Enter" && handleAdd()}
+            placeholder="Add a new phrase..."
+            className="flex-1 px-4 py-2 border border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-black/10"
           />
-          <button 
-            onClick={handleAdd}
-            className="px-4 py-2 bg-black text-white rounded-lg hover:bg-black/90 transition-colors whitespace-nowrap"
+          <button
+            type="submit"
+            disabled={isAdding || !newPhrase.trim()}
+            className="px-4 py-2 bg-black text-white rounded-lg hover:bg-black/90 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
           >
-            Add Phrase
+            {isAdding ? "Adding..." : "Add Phrase"}
           </button>
         </div>
-
-        {loading ? (
-          <div className="text-muted py-8 text-center">Loading phrases...</div>
-        ) : error ? (
-          <div className="text-red-500 py-8 text-center">Error loading phrases</div>
-        ) : phrases.length === 0 ? (
-          <div className="text-muted py-8 text-center">
-            No phrases added yet. Add your first phrase above!
-          </div>
-        ) : (
-          <div className="space-y-4">
-            {phrases.map((phrase) => (
-              <div
-                key={phrase.id}
-                className="bg-white rounded-lg border border-border p-4"
-              >
-                {editingId === phrase.id ? (
-                  <div className="flex space-x-3">
-                    <Input
-                      value={editingText}
-                      onChange={(e) => setEditingText(e.target.value)}
-                      onKeyPress={(e) => e.key === "Enter" && handleEdit(phrase.id)}
-                    />
-                    <button 
-                      onClick={() => handleEdit(phrase.id)}
-                      className="px-4 py-2 bg-black text-white rounded-lg hover:bg-black/90 transition-colors"
-                    >
-                      Save
-                    </button>
-                    <button
-                      onClick={() => {
-                        setEditingId(null);
-                        setEditingText("");
-                      }}
-                      className="px-4 py-2 border border-border rounded-lg hover:bg-gray-50 transition-colors"
-                    >
-                      Cancel
-                    </button>
-                  </div>
-                ) : (
-                  <div className="flex items-start justify-between group">
-                    <div className="space-y-1 flex-1">
-                      <p className="whitespace-pre-wrap">{phrase.phrase}</p>
-                      <p className="text-sm text-muted">
-                        Added {formatDate(phrase.created_at)}
-                      </p>
-                    </div>
-                    <div className="flex space-x-2 opacity-0 group-hover:opacity-100 transition-opacity">
-                      <button
-                        onClick={() => startEditing(phrase.id, phrase.phrase)}
-                        className="p-2 text-muted hover:text-black rounded-lg hover:bg-gray-50 transition-colors"
-                        title="Edit phrase"
-                      >
-                        Edit
-                      </button>
-                      <button
-                        onClick={() => handleDelete(phrase.id)}
-                        className="p-2 text-muted hover:text-red-500 rounded-lg hover:bg-gray-50 transition-colors"
-                        title="Delete phrase"
-                      >
-                        Delete
-                      </button>
-                    </div>
-                  </div>
-                )}
-              </div>
-            ))}
+        
+        {errorMessage && (
+          <div className="text-red-500 text-sm px-1">
+            {errorMessage}
           </div>
         )}
-      </div>
+      </form>
+
+      {loading ? (
+        <div className="text-center text-muted py-8">Loading phrases...</div>
+      ) : error ? (
+        <div className="text-center text-red-500 py-8">Error loading phrases</div>
+      ) : phrases.length === 0 ? (
+        <div className="text-center text-muted py-8">No phrases added yet</div>
+      ) : (
+        <ul className="space-y-2">
+          {phrases.map((phrase) => (
+            <li 
+              key={phrase.id} 
+              className="text-lg flex items-center group relative pl-5"
+              onMouseEnter={() => setHoveredPhraseId(phrase.id)}
+              onMouseLeave={() => setHoveredPhraseId(null)}
+            >
+              <span className="absolute left-0">•</span>
+              <span>{phrase.text || phrase.phrase}</span>
+              
+              {hoveredPhraseId === phrase.id && (
+                <button
+                  onClick={() => handleDeletePhrase(phrase.id)}
+                  className="ml-3 text-red-500 hover:text-red-700 transition-colors text-sm"
+                  aria-label="Delete phrase"
+                >
+                  Delete
+                </button>
+              )}
+            </li>
+          ))}
+        </ul>
+      )}
     </div>
   );
 } 

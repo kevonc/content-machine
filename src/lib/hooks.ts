@@ -66,8 +66,10 @@ export function usePhrases() {
           .order('created_at', { ascending: false });
 
         if (error) throw error;
+        console.log('Fetched phrases:', data); // Debug log
         setPhrases(data);
       } catch (e) {
+        console.error('Error fetching phrases:', e);
         setError(e as Error);
       } finally {
         setLoading(false);

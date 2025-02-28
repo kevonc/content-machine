@@ -7,9 +7,11 @@ import { contentTypeNames, formatDate } from "@/lib/utils";
 import type { Database } from "@/lib/supabase";
 
 type Content = Database["public"]["Tables"]["content"]["Row"];
+type ContentType = Database["public"]["Tables"]["content"]["Row"]["content_type"];
 
 export default function ContentPage() {
-  const [filter, setFilter] = useState<"all" | "posted" | "unposted">("all");
+  const [statusFilter, setStatusFilter] = useState<"all" | "posted" | "unposted">("all");
+  const [typeFilter, setTypeFilter] = useState<ContentType | "all">("all");
   const [contents, setContents] = useState<Content[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<Error | null>(null);
@@ -20,10 +22,16 @@ export default function ContentPage() {
       try {
         let query = supabase.from("content").select("*").order("created_at", { ascending: false });
         
-        if (filter === "posted") {
+        // Apply status filter
+        if (statusFilter === "posted") {
           query = query.eq("is_posted", true);
-        } else if (filter === "unposted") {
+        } else if (statusFilter === "unposted") {
           query = query.eq("is_posted", false);
+        }
+        
+        // Apply content type filter
+        if (typeFilter !== "all") {
+          query = query.eq("content_type", typeFilter);
         }
 
         const { data, error } = await query;
@@ -39,7 +47,7 @@ export default function ContentPage() {
     }
 
     fetchContent();
-  }, [filter]);
+  }, [statusFilter, typeFilter]);
 
   const togglePosted = async (id: string, currentStatus: boolean) => {
     try {
@@ -50,10 +58,9 @@ export default function ContentPage() {
 
       if (error) throw error;
 
-      setContents(contents.map(content => 
-        content.id === id 
-          ? { ...content, is_posted: !currentStatus }
-          : content
+      // Update local state
+      setContents(contents.map(item => 
+        item.id === id ? { ...item, is_posted: !currentStatus } : item
       ));
     } catch (e) {
       console.error("Error updating status:", e);
@@ -64,20 +71,37 @@ export default function ContentPage() {
     <div className="max-w-4xl mx-auto p-6 space-y-6">
       <div className="flex items-center justify-between">
         <h1 className="text-3xl font-semibold">Content</h1>
-        <select
-          value={filter}
-          onChange={(e) => setFilter(e.target.value as typeof filter)}
-          className="px-4 py-2 bg-white border border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500/20"
-        >
-          <option value="all">All Content</option>
-          <option value="posted">Posted</option>
-          <option value="unposted">Unposted</option>
-        </select>
+        <div className="flex space-x-3">
+          {/* Status Filter */}
+          <select
+            value={statusFilter}
+            onChange={(e) => setStatusFilter(e.target.value as "all" | "posted" | "unposted")}
+            className="px-3 py-2 border border-border rounded-lg bg-white"
+          >
+            <option value="all">All Status</option>
+            <option value="posted">Posted</option>
+            <option value="unposted">Unposted</option>
+          </select>
+          
+          {/* Content Type Filter */}
+          <select
+            value={typeFilter}
+            onChange={(e) => setTypeFilter(e.target.value as ContentType | "all")}
+            className="px-3 py-2 border border-border rounded-lg bg-white"
+          >
+            <option value="all">All Types</option>
+            {Object.entries(contentTypeNames).map(([value, label]) => (
+              <option key={value} value={value}>
+                {label}
+              </option>
+            ))}
+          </select>
+        </div>
       </div>
 
       <div className="bg-card rounded-lg shadow-card divide-y divide-border">
         {loading ? (
-          <div className="p-6 text-center text-muted">Loading content...</div>
+          <div className="p-6 text-center text-muted">Loading...</div>
         ) : error ? (
           <div className="p-6 text-center text-red-500">Error loading content</div>
         ) : contents.length === 0 ? (

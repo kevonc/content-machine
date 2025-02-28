@@ -6,7 +6,7 @@ export default function Navbar() {
       <div className="container mx-auto px-6 py-4">
         <div className="flex items-center justify-between">
           <Link href="/" className="text-xl font-semibold text-black hover:text-black/80">
-            Content Machine
+            Kevon's Content Machine
           </Link>
           <div className="flex items-center space-x-1">
             <Link 

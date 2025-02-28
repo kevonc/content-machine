@@ -6,7 +6,7 @@ import Navbar from "@/components/Navbar";
 const inter = Inter({ subsets: ["latin"] });
 
 export const metadata: Metadata = {
-  title: "Content Machine",
+  title: "Kevon's Content Machine",
   description: "Personal content management system",
 };
 
