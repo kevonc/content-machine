@@ -26,3 +26,8 @@ Implementation steps:
 [x] Creating the Library (phrases) page
 [x] Creating the Content listing page
 [x] Implementing the processing logic
+[x] The Library page with the same card-based design
+[ ] The Content page with a better list view
+[ ] Add loading/transition states to buttons
+[ ] Improve the form inputs and textareas with better focus states
+[ ] Add some subtle animations for better interactivity

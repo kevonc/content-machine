@@ -1,13 +1,27 @@
 import type { Config } from "tailwindcss"
 
-const config = {
+const config: Config = {
   content: [
-    './src/**/*.{js,ts,jsx,tsx}',
+    "./src/pages/**/*.{js,ts,jsx,tsx,mdx}",
+    "./src/components/**/*.{js,ts,jsx,tsx,mdx}",
+    "./src/app/**/*.{js,ts,jsx,tsx,mdx}",
   ],
   theme: {
-    extend: {},
+    extend: {
+      colors: {
+        border: '#EAEAEA',
+        muted: '#666666',
+      },
+      borderRadius: {
+        'lg': '1rem',
+        'md': '0.75rem',
+      },
+      boxShadow: {
+        'card': '0 2px 8px rgba(0, 0, 0, 0.04)',
+      }
+    },
   },
   plugins: [],
-} satisfies Config
+}
 
 export default config 

@@ -39,12 +39,12 @@ export default function Home() {
   };
 
   return (
-    <div className="max-w-4xl mx-auto space-y-6">
-      <h1 className="text-3xl font-bold">Create Content</h1>
+    <div className="max-w-4xl mx-auto p-6 space-y-6">
+      <h1 className="text-3xl font-semibold">Create Content</h1>
       
-      <div className="space-y-4">
+      <div className="bg-card rounded-lg shadow-card p-6 space-y-6">
         <div className="space-y-2">
-          <label className="font-medium">Content</label>
+          <label className="text-sm font-medium">Content</label>
           <Textarea
             placeholder="Paste your text here..."
             className="min-h-[200px]"
@@ -54,10 +54,11 @@ export default function Home() {
         </div>
 
         <div className="space-y-2">
-          <label className="font-medium">Content Type</label>
+          <label className="text-sm font-medium">Content Type</label>
           <Select 
             value={contentType} 
             onChange={(e) => setContentType(e.target.value as ContentType)}
+            className="bg-white"
           >
             <option value="">Select content type</option>
             {Object.entries(contentTypeNames).map(([value, label]) => (
@@ -73,7 +74,8 @@ export default function Home() {
         )}
 
         <button 
-          className="w-full px-4 py-2 bg-blue-500 text-white rounded-md hover:bg-blue-600 disabled:opacity-50"
+          className="w-full px-4 py-3 bg-black text-white rounded-lg hover:bg-black/90 
+            disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
           onClick={handleProcess}
           disabled={processing || !inputText || !contentType}
         >
