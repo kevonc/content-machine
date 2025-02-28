@@ -1,0 +1,28 @@
+Project Spec:
+- Create a simple web app that becomes my personal content machine
+- Store different guidelines and examplesfor different types of content
+- Store a libary of phrases I use for my writing
+- Turn my inputs into the correct content format for the appropriate channel
+- If "Kevon's Social Posts" is selected, it automatically means all these channels (1. Twitter/X, 2. Threads, 3. LinkedIn)
+
+Workflow:
+- On the homepage, there's a big input box to paste in text (voice transcript or outline)
+- Underneath the big input box, there's a dropdown to select the type of content I want to create (1. Small School's Article, 2. Kevon's Newsletter, 3. Kevon's Personal Essay, 4. Kevon's Social Posts) 
+- There's a button to "Process" the input text
+- In the navigation bar, there's a button to "Guidelines" page that allows me to add or edit guidelines and examples
+- In the navigation bar, there's a button to "Library" page that allows me to add or edit phrases
+- Once processed, the output is a fully fleshed out piece of content that I can copy and paste into the appropriate channel. The output will also be saved in a database table with a boolean field "Posted?" to indicate the status
+- In the navigation bar, there's a button to "Content" page that shows a list of content from the database table (showing the date it was created, the type of content, and the status). There's a simple filter to easily get a list of content that has "Posted?" field as false.
+
+Tech stack:
+- Next.js
+- Tailwind CSS
+- Supabase
+- Vercel
+
+Implementation steps:
+[x] Setting up the Supabase client configuration
+[x] Creating the Guidelines page
+[x] Creating the Library (phrases) page
+[x] Creating the Content listing page
+[x] Implementing the processing logic
